@@ -33,12 +33,29 @@ export const sendChat = createServerFn({ method: "POST" })
       .order("created_at", { ascending: true })
       .limit(40);
 
+    // Build learner context so the assistant can give personalised answers
+    const [{ data: enrollments }, { data: progress }, { data: profile }] = await Promise.all([
+      context.supabase.from("enrollments").select("courses(title, category, difficulty)").eq("user_id", context.userId),
+      context.supabase.from("module_progress").select("completed").eq("user_id", context.userId),
+      context.supabase.from("profiles").select("display_name, department").eq("id", context.userId).maybeSingle(),
+    ]);
+    const courseList = (enrollments ?? [])
+      .map((e) => (e.courses as unknown as { title: string } | null)?.title)
+      .filter(Boolean)
+      .join(", ");
+    const doneCount = (progress ?? []).filter((p) => p.completed).length;
+
     const messages = [
       {
         role: "system" as const,
         content:
-          "You are Pathwise Tutor, a friendly, patient, and encouraging AI learning tutor. Explain concepts clearly, use analogies, offer small exercises, and always end responses with a short follow-up question or suggestion. Format with markdown when helpful.",
+          "You are Pathwise Assistant, a friendly, patient AI learning assistant inside a Smart Education platform. " +
+          "Explain concepts clearly with analogies, suggest short exercises, recommend next steps in the learner's courses, " +
+          "and help with doubts, revision plans and study schedules. Use markdown. End with a brief follow-up question.\n\n" +
+          `Learner context — name: ${profile?.display_name ?? "student"}; department: ${profile?.department ?? "n/a"}; ` +
+          `enrolled courses: ${courseList || "none yet"}; units completed: ${doneCount}.`,
       },
+
       ...(history ?? []).map((m) => ({
         role: m.role as "user" | "assistant" | "system",
         content: m.content,

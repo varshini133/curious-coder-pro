@@ -12,9 +12,18 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AuthenticatedStudentsRouteImport } from './routes/_authenticated/students'
+import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
+import { Route as AuthenticatedProgressRouteImport } from './routes/_authenticated/progress'
+import { Route as AuthenticatedProfileRouteImport } from './routes/_authenticated/profile'
+import { Route as AuthenticatedNotificationsRouteImport } from './routes/_authenticated/notifications'
+import { Route as AuthenticatedLibraryRouteImport } from './routes/_authenticated/library'
+import { Route as AuthenticatedInstructorRouteImport } from './routes/_authenticated/instructor'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
-import { Route as AuthenticatedChatRouteImport } from './routes/_authenticated/chat'
-import { Route as AuthenticatedPathsPathIdRouteImport } from './routes/_authenticated/paths.$pathId'
+import { Route as AuthenticatedCertificatesRouteImport } from './routes/_authenticated/certificates'
+import { Route as AuthenticatedAssistantRouteImport } from './routes/_authenticated/assistant'
+import { Route as AuthenticatedCoursesIndexRouteImport } from './routes/_authenticated/courses.index'
+import { Route as AuthenticatedCoursesCourseIdRouteImport } from './routes/_authenticated/courses.$courseId'
 
 const AuthRoute = AuthRouteImport.update({
   id: '/auth',
@@ -30,59 +39,171 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthenticatedStudentsRoute = AuthenticatedStudentsRouteImport.update({
+  id: '/students',
+  path: '/students',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedSettingsRoute = AuthenticatedSettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedProgressRoute = AuthenticatedProgressRouteImport.update({
+  id: '/progress',
+  path: '/progress',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedProfileRoute = AuthenticatedProfileRouteImport.update({
+  id: '/profile',
+  path: '/profile',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedNotificationsRoute =
+  AuthenticatedNotificationsRouteImport.update({
+    id: '/notifications',
+    path: '/notifications',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedLibraryRoute = AuthenticatedLibraryRouteImport.update({
+  id: '/library',
+  path: '/library',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedInstructorRoute = AuthenticatedInstructorRouteImport.update({
+  id: '/instructor',
+  path: '/instructor',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
   id: '/dashboard',
   path: '/dashboard',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
-const AuthenticatedChatRoute = AuthenticatedChatRouteImport.update({
-  id: '/chat',
-  path: '/chat',
+const AuthenticatedCertificatesRoute =
+  AuthenticatedCertificatesRouteImport.update({
+    id: '/certificates',
+    path: '/certificates',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedAssistantRoute = AuthenticatedAssistantRouteImport.update({
+  id: '/assistant',
+  path: '/assistant',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
-const AuthenticatedPathsPathIdRoute =
-  AuthenticatedPathsPathIdRouteImport.update({
-    id: '/paths/$pathId',
-    path: '/paths/$pathId',
+const AuthenticatedCoursesIndexRoute =
+  AuthenticatedCoursesIndexRouteImport.update({
+    id: '/courses/',
+    path: '/courses/',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedCoursesCourseIdRoute =
+  AuthenticatedCoursesCourseIdRouteImport.update({
+    id: '/courses/$courseId',
+    path: '/courses/$courseId',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
-  '/chat': typeof AuthenticatedChatRoute
+  '/assistant': typeof AuthenticatedAssistantRoute
+  '/certificates': typeof AuthenticatedCertificatesRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
-  '/paths/$pathId': typeof AuthenticatedPathsPathIdRoute
+  '/instructor': typeof AuthenticatedInstructorRoute
+  '/library': typeof AuthenticatedLibraryRoute
+  '/notifications': typeof AuthenticatedNotificationsRoute
+  '/profile': typeof AuthenticatedProfileRoute
+  '/progress': typeof AuthenticatedProgressRoute
+  '/settings': typeof AuthenticatedSettingsRoute
+  '/students': typeof AuthenticatedStudentsRoute
+  '/courses/$courseId': typeof AuthenticatedCoursesCourseIdRoute
+  '/courses/': typeof AuthenticatedCoursesIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
-  '/chat': typeof AuthenticatedChatRoute
+  '/assistant': typeof AuthenticatedAssistantRoute
+  '/certificates': typeof AuthenticatedCertificatesRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
-  '/paths/$pathId': typeof AuthenticatedPathsPathIdRoute
+  '/instructor': typeof AuthenticatedInstructorRoute
+  '/library': typeof AuthenticatedLibraryRoute
+  '/notifications': typeof AuthenticatedNotificationsRoute
+  '/profile': typeof AuthenticatedProfileRoute
+  '/progress': typeof AuthenticatedProgressRoute
+  '/settings': typeof AuthenticatedSettingsRoute
+  '/students': typeof AuthenticatedStudentsRoute
+  '/courses/$courseId': typeof AuthenticatedCoursesCourseIdRoute
+  '/courses': typeof AuthenticatedCoursesIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/auth': typeof AuthRoute
-  '/_authenticated/chat': typeof AuthenticatedChatRoute
+  '/_authenticated/assistant': typeof AuthenticatedAssistantRoute
+  '/_authenticated/certificates': typeof AuthenticatedCertificatesRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
-  '/_authenticated/paths/$pathId': typeof AuthenticatedPathsPathIdRoute
+  '/_authenticated/instructor': typeof AuthenticatedInstructorRoute
+  '/_authenticated/library': typeof AuthenticatedLibraryRoute
+  '/_authenticated/notifications': typeof AuthenticatedNotificationsRoute
+  '/_authenticated/profile': typeof AuthenticatedProfileRoute
+  '/_authenticated/progress': typeof AuthenticatedProgressRoute
+  '/_authenticated/settings': typeof AuthenticatedSettingsRoute
+  '/_authenticated/students': typeof AuthenticatedStudentsRoute
+  '/_authenticated/courses/$courseId': typeof AuthenticatedCoursesCourseIdRoute
+  '/_authenticated/courses/': typeof AuthenticatedCoursesIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/auth' | '/chat' | '/dashboard' | '/paths/$pathId'
+  fullPaths:
+    | '/'
+    | '/auth'
+    | '/assistant'
+    | '/certificates'
+    | '/dashboard'
+    | '/instructor'
+    | '/library'
+    | '/notifications'
+    | '/profile'
+    | '/progress'
+    | '/settings'
+    | '/students'
+    | '/courses/$courseId'
+    | '/courses/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/auth' | '/chat' | '/dashboard' | '/paths/$pathId'
+  to:
+    | '/'
+    | '/auth'
+    | '/assistant'
+    | '/certificates'
+    | '/dashboard'
+    | '/instructor'
+    | '/library'
+    | '/notifications'
+    | '/profile'
+    | '/progress'
+    | '/settings'
+    | '/students'
+    | '/courses/$courseId'
+    | '/courses'
   id:
     | '__root__'
     | '/'
     | '/_authenticated'
     | '/auth'
-    | '/_authenticated/chat'
+    | '/_authenticated/assistant'
+    | '/_authenticated/certificates'
     | '/_authenticated/dashboard'
-    | '/_authenticated/paths/$pathId'
+    | '/_authenticated/instructor'
+    | '/_authenticated/library'
+    | '/_authenticated/notifications'
+    | '/_authenticated/profile'
+    | '/_authenticated/progress'
+    | '/_authenticated/settings'
+    | '/_authenticated/students'
+    | '/_authenticated/courses/$courseId'
+    | '/_authenticated/courses/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -114,6 +235,55 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_authenticated/students': {
+      id: '/_authenticated/students'
+      path: '/students'
+      fullPath: '/students'
+      preLoaderRoute: typeof AuthenticatedStudentsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/settings': {
+      id: '/_authenticated/settings'
+      path: '/settings'
+      fullPath: '/settings'
+      preLoaderRoute: typeof AuthenticatedSettingsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/progress': {
+      id: '/_authenticated/progress'
+      path: '/progress'
+      fullPath: '/progress'
+      preLoaderRoute: typeof AuthenticatedProgressRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/profile': {
+      id: '/_authenticated/profile'
+      path: '/profile'
+      fullPath: '/profile'
+      preLoaderRoute: typeof AuthenticatedProfileRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/notifications': {
+      id: '/_authenticated/notifications'
+      path: '/notifications'
+      fullPath: '/notifications'
+      preLoaderRoute: typeof AuthenticatedNotificationsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/library': {
+      id: '/_authenticated/library'
+      path: '/library'
+      fullPath: '/library'
+      preLoaderRoute: typeof AuthenticatedLibraryRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/instructor': {
+      id: '/_authenticated/instructor'
+      path: '/instructor'
+      fullPath: '/instructor'
+      preLoaderRoute: typeof AuthenticatedInstructorRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/dashboard': {
       id: '/_authenticated/dashboard'
       path: '/dashboard'
@@ -121,33 +291,65 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedDashboardRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/_authenticated/chat': {
-      id: '/_authenticated/chat'
-      path: '/chat'
-      fullPath: '/chat'
-      preLoaderRoute: typeof AuthenticatedChatRouteImport
+    '/_authenticated/certificates': {
+      id: '/_authenticated/certificates'
+      path: '/certificates'
+      fullPath: '/certificates'
+      preLoaderRoute: typeof AuthenticatedCertificatesRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/_authenticated/paths/$pathId': {
-      id: '/_authenticated/paths/$pathId'
-      path: '/paths/$pathId'
-      fullPath: '/paths/$pathId'
-      preLoaderRoute: typeof AuthenticatedPathsPathIdRouteImport
+    '/_authenticated/assistant': {
+      id: '/_authenticated/assistant'
+      path: '/assistant'
+      fullPath: '/assistant'
+      preLoaderRoute: typeof AuthenticatedAssistantRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/courses/': {
+      id: '/_authenticated/courses/'
+      path: '/courses'
+      fullPath: '/courses/'
+      preLoaderRoute: typeof AuthenticatedCoursesIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/courses/$courseId': {
+      id: '/_authenticated/courses/$courseId'
+      path: '/courses/$courseId'
+      fullPath: '/courses/$courseId'
+      preLoaderRoute: typeof AuthenticatedCoursesCourseIdRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
   }
 }
 
 interface AuthenticatedRouteRouteChildren {
-  AuthenticatedChatRoute: typeof AuthenticatedChatRoute
+  AuthenticatedAssistantRoute: typeof AuthenticatedAssistantRoute
+  AuthenticatedCertificatesRoute: typeof AuthenticatedCertificatesRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
-  AuthenticatedPathsPathIdRoute: typeof AuthenticatedPathsPathIdRoute
+  AuthenticatedInstructorRoute: typeof AuthenticatedInstructorRoute
+  AuthenticatedLibraryRoute: typeof AuthenticatedLibraryRoute
+  AuthenticatedNotificationsRoute: typeof AuthenticatedNotificationsRoute
+  AuthenticatedProfileRoute: typeof AuthenticatedProfileRoute
+  AuthenticatedProgressRoute: typeof AuthenticatedProgressRoute
+  AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
+  AuthenticatedStudentsRoute: typeof AuthenticatedStudentsRoute
+  AuthenticatedCoursesCourseIdRoute: typeof AuthenticatedCoursesCourseIdRoute
+  AuthenticatedCoursesIndexRoute: typeof AuthenticatedCoursesIndexRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
-  AuthenticatedChatRoute: AuthenticatedChatRoute,
+  AuthenticatedAssistantRoute: AuthenticatedAssistantRoute,
+  AuthenticatedCertificatesRoute: AuthenticatedCertificatesRoute,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
-  AuthenticatedPathsPathIdRoute: AuthenticatedPathsPathIdRoute,
+  AuthenticatedInstructorRoute: AuthenticatedInstructorRoute,
+  AuthenticatedLibraryRoute: AuthenticatedLibraryRoute,
+  AuthenticatedNotificationsRoute: AuthenticatedNotificationsRoute,
+  AuthenticatedProfileRoute: AuthenticatedProfileRoute,
+  AuthenticatedProgressRoute: AuthenticatedProgressRoute,
+  AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,
+  AuthenticatedStudentsRoute: AuthenticatedStudentsRoute,
+  AuthenticatedCoursesCourseIdRoute: AuthenticatedCoursesCourseIdRoute,
+  AuthenticatedCoursesIndexRoute: AuthenticatedCoursesIndexRoute,
 }
 
 const AuthenticatedRouteRouteWithChildren =
@@ -161,13 +363,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}

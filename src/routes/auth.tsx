@@ -7,7 +7,7 @@ import { lovable } from "@/integrations/lovable";
 import heroBooks from "@/assets/hero-books.png";
 
 export const Route = createFileRoute("/auth")({
-  validateSearch: (s: Record<string, unknown>) => ({
+  validateSearch: (s: Record<string, unknown>): { mode?: "signup" | "signin" } => ({
     mode: s.mode === "signup" ? ("signup" as const) : ("signin" as const),
   }),
   head: () => ({ meta: [{ title: "Sign in — Pathwise" }] }),

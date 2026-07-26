@@ -1,258 +1,336 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { toast } from "sonner";
-import { Sparkles, Plus, Clock, TrendingUp, Trash2, X, ArrowRight, BookOpen, Trophy } from "lucide-react";
-import { deletePath, generatePath, listPaths } from "@/lib/learning.functions";
+import {
+  BookOpen,
+  Flame,
+  Clock,
+  Trophy,
+  ArrowRight,
+  CheckCircle2,
+  Circle,
+  CalendarDays,
+  Bell,
+  Plus,
+  Award,
+} from "lucide-react";
+import { AreaChart, Area, BarChart, Bar as RBar, ResponsiveContainer, Tooltip, XAxis, CartesianGrid } from "recharts";
+import { bootstrapStudent, getStudentOverview, toggleTask, addTask } from "@/lib/student.functions";
+import { getAccount } from "@/lib/account.functions";
+import { ProgressRing } from "@/components/app/progress-ring";
+import { StatCard, SectionCard, Bar } from "@/components/app/stat-card";
+import { StudyHeatmap } from "@/components/app/study-heatmap";
 import heroBooks from "@/assets/hero-books.png";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
-  head: () => ({ meta: [{ title: "Dashboard — Pathwise" }] }),
-  component: Dashboard,
+  head: () => ({
+    meta: [
+      { title: "Student Dashboard — Pathwise Smart Education" },
+      { name: "description", content: "Track course progress, streaks, upcoming deadlines and study analytics in one place." },
+      { property: "og:title", content: "Student Dashboard — Pathwise" },
+      { property: "og:description", content: "Track course progress, streaks and study analytics." },
+    ],
+  }),
+  component: StudentDashboard,
 });
 
-type PathRow = Awaited<ReturnType<typeof listPaths>>[number];
-
-function Dashboard() {
-  const { data: paths, isLoading } = useQuery({
-    queryKey: ["paths"],
-    queryFn: () => listPaths(),
+function StudentDashboard() {
+  const qc = useQueryClient();
+  const boot = useQuery({ queryKey: ["bootstrap"], queryFn: () => bootstrapStudent(), staleTime: Infinity });
+  const { data: account } = useQuery({ queryKey: ["account"], queryFn: () => getAccount() });
+  const { data, isLoading } = useQuery({
+    queryKey: ["overview"],
+    queryFn: () => getStudentOverview(),
+    enabled: boot.isSuccess,
   });
-  const [creating, setCreating] = useState(false);
 
-  const totalHours = (paths ?? []).reduce((sum, p) => sum + (p.estimated_hours ?? 0), 0);
-  const totalDone = (paths ?? []).reduce((s, p) => s + (p.progress?.done ?? 0), 0);
-  const totalModules = (paths ?? []).reduce((s, p) => s + (p.progress?.total ?? 0), 0);
-  const overallPct = totalModules ? Math.round((totalDone / totalModules) * 100) : 0;
+  const [newTask, setNewTask] = useState("");
+  const flip = useMutation({
+    mutationFn: (v: { id: string; done: boolean }) => toggleTask({ data: v }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["overview"] }),
+    onError: (e: Error) => toast.error(e.message),
+  });
+  const create = useMutation({
+    mutationFn: (title: string) =>
+      addTask({ data: { title, due_at: new Date(Date.now() + 3 * 86400000).toISOString() } }),
+    onSuccess: () => {
+      setNewTask("");
+      toast.success("Task added");
+      qc.invalidateQueries({ queryKey: ["overview"] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  if (isLoading || !data) {
+    return (
+      <div className="space-y-4 pb-24">
+        <div className="h-44 animate-pulse rounded-3xl bg-card" />
+        <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+          {[0, 1, 2, 3].map((i) => (
+            <div key={i} className="h-28 animate-pulse rounded-2xl bg-card" />
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  const s = data.stats;
+  const firstName = (account?.profile?.display_name ?? "there").split(" ")[0];
+  const hour = new Date().getHours();
+  const greeting = hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening";
 
   return (
-    <div className="space-y-6 pb-24">
-      {/* Header hero */}
+    <div className="space-y-6 pb-28">
+      {/* Hero */}
       <div className="relative overflow-hidden rounded-3xl bg-gradient-hero p-6 text-white shadow-glow sm:p-8">
-        <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-4">
+        <div className="relative z-10 grid gap-6 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center">
           <div className="min-w-0">
-            <p className="text-sm opacity-80">Keep it up!</p>
-            <h1 className="mt-1 truncate text-2xl font-extrabold sm:text-3xl">Your learning journey</h1>
-            <p className="mt-2 max-w-md text-sm opacity-90">
-              {paths?.length
-                ? `${totalDone} of ${totalModules} units completed across ${paths.length} path${paths.length === 1 ? "" : "s"}.`
-                : "Create your first AI-generated learning path to get started."}
+            <p className="text-sm opacity-80">{greeting}, {firstName} 👋</p>
+            <h1 className="mt-1 text-2xl font-extrabold sm:text-3xl">You're {s.overallPct}% through your paths</h1>
+            <p className="mt-2 max-w-lg text-sm opacity-90">
+              {s.doneModules} of {s.totalModules} units completed · {s.hours}h studied · {s.streak}-day streak
             </p>
-            <button
-              onClick={() => setCreating(true)}
-              className="mt-4 inline-flex items-center gap-2 rounded-xl bg-white/20 px-4 py-2 text-sm font-semibold backdrop-blur transition hover:bg-white/30"
-            >
-              <Plus className="h-4 w-4" /> New learning path
-            </button>
+            <div className="mt-4 flex flex-wrap gap-2">
+              {data.current && (
+                <Link
+                  to="/courses/$courseId"
+                  params={{ courseId: data.current.id }}
+                  className="inline-flex items-center gap-2 rounded-xl bg-white/20 px-4 py-2 text-sm font-semibold backdrop-blur transition hover:bg-white/30"
+                >
+                  Continue learning <ArrowRight className="h-4 w-4" />
+                </Link>
+              )}
+              <Link
+                to="/courses"
+                className="inline-flex items-center gap-2 rounded-xl bg-white/10 px-4 py-2 text-sm font-semibold backdrop-blur transition hover:bg-white/20"
+              >
+                <Plus className="h-4 w-4" /> Browse catalogue
+              </Link>
+            </div>
           </div>
-          <img src={heroBooks} alt="" width={160} height={160} className="hidden shrink-0 animate-float sm:block" />
+          <div className="flex items-center gap-4">
+            <div className="rounded-3xl bg-white/15 p-3 backdrop-blur">
+              <ProgressRing value={s.overallPct} size={104} tone="coral" sublabel="overall" />
+            </div>
+            <img src={heroBooks} alt="" width={140} height={140} className="hidden animate-float xl:block" />
+          </div>
         </div>
-        <div className="absolute -bottom-20 -right-20 h-64 w-64 rounded-full bg-white/10 blur-3xl" />
+        <div className="absolute -bottom-24 -right-16 h-72 w-72 rounded-full bg-white/10 blur-3xl" />
       </div>
 
       {/* Stats */}
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-        <StatCard icon={<BookOpen className="h-4 w-4" />} label="Learning paths" value={paths?.length ?? 0} tone="blue" />
-        <StatCard icon={<TrendingUp className="h-4 w-4" />} label="Overall progress" value={`${overallPct}%`} tone="coral" />
-        <StatCard icon={<Trophy className="h-4 w-4" />} label="Units completed" value={totalDone} tone="lavender" />
-        <StatCard icon={<Clock className="h-4 w-4" />} label="Est. hours" value={totalHours} tone="blue" />
+        <StatCard icon={<BookOpen className="h-4 w-4" />} label="Active paths" value={s.activePaths} tone="blue" hint={`${s.skillsCompleted} completed`} />
+        <StatCard icon={<Flame className="h-4 w-4" />} label="Current streak" value={`${s.streak} days`} tone="coral" hint="Keep it alive!" />
+        <StatCard icon={<Clock className="h-4 w-4" />} label="Hours studied" value={s.hours} tone="lavender" hint={`${s.readingMinutes} minutes total`} />
+        <StatCard icon={<Trophy className="h-4 w-4" />} label="Certificates" value={s.certificates} tone="mint" hint="Verified & downloadable" />
       </div>
 
-      {/* Paths grid */}
-      <div>
-        <div className="mb-3 flex items-center justify-between">
-          <h2 className="text-lg font-bold">Your paths</h2>
-          <button onClick={() => setCreating(true)} className="text-sm font-semibold text-primary hover:underline">
-            + New path
-          </button>
-        </div>
-
-        {isLoading ? (
-          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-            {[0, 1, 2].map((i) => (
-              <div key={i} className="h-48 animate-pulse rounded-3xl bg-card" />
-            ))}
-          </div>
-        ) : paths && paths.length > 0 ? (
-          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-            {paths.map((p) => <PathCard key={p.id} path={p} />)}
-          </div>
-        ) : (
-          <EmptyState onCreate={() => setCreating(true)} />
-        )}
-      </div>
-
-      {creating && <CreatePathDialog onClose={() => setCreating(false)} />}
-    </div>
-  );
-}
-
-function StatCard({ icon, label, value, tone }: { icon: React.ReactNode; label: string; value: string | number; tone: "coral" | "lavender" | "blue" }) {
-  const gradient = tone === "coral" ? "bg-gradient-coral" : tone === "lavender" ? "bg-gradient-lavender" : "bg-gradient-blue";
-  return (
-    <div className="rounded-3xl border border-border bg-card p-4 shadow-soft">
-      <div className={`inline-flex h-8 w-8 items-center justify-center rounded-xl ${gradient} text-white`}>{icon}</div>
-      <p className="mt-3 text-2xl font-extrabold tracking-tight">{value}</p>
-      <p className="text-xs text-muted-foreground">{label}</p>
-    </div>
-  );
-}
-
-function PathCard({ path }: { path: PathRow }) {
-  const queryClient = useQueryClient();
-  const del = useMutation({
-    mutationFn: () => deletePath({ data: { id: path.id } }),
-    onSuccess: () => {
-      toast.success("Path deleted");
-      queryClient.invalidateQueries({ queryKey: ["paths"] });
-    },
-    onError: (e) => toast.error(e instanceof Error ? e.message : "Failed"),
-  });
-  const pct = path.progress.total ? Math.round((path.progress.done / path.progress.total) * 100) : 0;
-  const gradient = path.color === "coral" ? "bg-gradient-coral" : path.color === "lavender" ? "bg-gradient-lavender" : "bg-gradient-blue";
-  const shadow = path.color === "coral" ? "shadow-coral-glow" : "shadow-glow";
-
-  return (
-    <div className="group relative flex flex-col rounded-3xl border border-border bg-card p-5 shadow-soft transition hover:-translate-y-1 hover:shadow-glow">
-      <div className="flex items-start justify-between gap-3">
-        <div className={`grid h-12 w-12 shrink-0 place-items-center rounded-2xl ${gradient} ${shadow}`}>
-          <Sparkles className="h-5 w-5 text-white" />
-        </div>
-        <button
-          onClick={() => del.mutate()}
-          className="rounded-lg p-1.5 text-muted-foreground opacity-0 transition hover:bg-destructive/10 hover:text-destructive group-hover:opacity-100"
-          aria-label="Delete path"
-        >
-          <Trash2 className="h-4 w-4" />
-        </button>
-      </div>
-      <h3 className="mt-4 line-clamp-2 text-lg font-bold leading-tight">{path.title}</h3>
-      <p className="mt-1 line-clamp-2 text-sm text-muted-foreground">{path.description}</p>
-
-      <div className="mt-4 flex items-center gap-2 text-xs text-muted-foreground">
-        <span className="rounded-full bg-secondary px-2 py-0.5 font-medium capitalize">{path.difficulty}</span>
-        <span className="inline-flex items-center gap-1"><Clock className="h-3 w-3" /> {path.estimated_hours}h</span>
-        <span>·</span>
-        <span>{path.progress.total} units</span>
-      </div>
-
-      <div className="mt-4">
-        <div className="mb-1.5 flex items-center justify-between text-xs">
-          <span className="font-medium">Progress</span>
-          <span className="font-bold text-foreground">{pct}%</span>
-        </div>
-        <div className="h-2 overflow-hidden rounded-full bg-secondary">
-          <div className={`h-full ${gradient} transition-all`} style={{ width: `${pct}%` }} />
-        </div>
-      </div>
-
-      <Link
-        to="/paths/$pathId"
-        params={{ pathId: path.id }}
-        className="mt-5 inline-flex items-center justify-between rounded-xl bg-foreground px-4 py-2.5 text-sm font-semibold text-background transition hover:opacity-90"
-      >
-        Continue learning <ArrowRight className="h-4 w-4" />
-      </Link>
-    </div>
-  );
-}
-
-function EmptyState({ onCreate }: { onCreate: () => void }) {
-  return (
-    <div className="rounded-3xl border border-dashed border-border bg-card p-10 text-center shadow-soft">
-      <img src={heroBooks} alt="" width={140} height={140} className="mx-auto animate-float" />
-      <h3 className="mt-4 text-xl font-bold">No learning paths yet</h3>
-      <p className="mt-2 text-sm text-muted-foreground">Tell Pathwise what you want to learn and we'll build a custom roadmap in seconds.</p>
-      <button onClick={onCreate} className="mt-5 inline-flex items-center gap-2 rounded-xl bg-gradient-hero px-5 py-2.5 text-sm font-semibold text-white shadow-glow">
-        <Plus className="h-4 w-4" /> Create your first path
-      </button>
-    </div>
-  );
-}
-
-function CreatePathDialog({ onClose }: { onClose: () => void }) {
-  const navigate = useNavigate();
-  const queryClient = useQueryClient();
-  const [skill, setSkill] = useState("");
-  const [difficulty, setDifficulty] = useState<"beginner" | "intermediate" | "advanced">("beginner");
-
-  const create = useMutation({
-    mutationFn: () => generatePath({ data: { skill, difficulty } }),
-    onSuccess: (res) => {
-      toast.success("Path created!");
-      queryClient.invalidateQueries({ queryKey: ["paths"] });
-      navigate({ to: "/paths/$pathId", params: { pathId: res.id } });
-    },
-    onError: (e) => toast.error(e instanceof Error ? e.message : "Failed to generate path"),
-  });
-
-  const suggestions = ["Public speaking", "Machine learning basics", "Guitar fundamentals", "Financial literacy", "Product design", "Spanish A1"];
-
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-foreground/40 p-4 backdrop-blur-sm">
-      <div className="w-full max-w-lg rounded-3xl border border-border bg-card p-6 shadow-glow">
-        <div className="flex items-start justify-between">
-          <div>
-            <h2 className="text-xl font-bold">Design a new path</h2>
-            <p className="mt-1 text-sm text-muted-foreground">What do you want to learn?</p>
-          </div>
-          <button onClick={onClose} className="rounded-lg p-1.5 hover:bg-accent"><X className="h-4 w-4" /></button>
-        </div>
-
-        <div className="mt-5 space-y-4">
-          <label className="block">
-            <span className="mb-1.5 block text-xs font-semibold text-muted-foreground">Skill or topic</span>
-            <input
-              autoFocus
-              value={skill}
-              onChange={(e) => setSkill(e.target.value)}
-              placeholder="e.g. Learn to draw portraits"
-              className="w-full rounded-xl border border-input bg-background px-3.5 py-2.5 text-sm outline-none focus:border-ring focus:ring-2 focus:ring-ring/40"
-            />
-          </label>
-
-          <div className="flex flex-wrap gap-2">
-            {suggestions.map((s) => (
-              <button
-                key={s}
-                type="button"
-                onClick={() => setSkill(s)}
-                className="rounded-full border border-border bg-background px-3 py-1 text-xs font-medium text-muted-foreground hover:bg-accent hover:text-foreground"
-              >
-                {s}
-              </button>
-            ))}
-          </div>
-
-          <label className="block">
-            <span className="mb-1.5 block text-xs font-semibold text-muted-foreground">Difficulty</span>
-            <div className="grid grid-cols-3 gap-2">
-              {(["beginner", "intermediate", "advanced"] as const).map((d) => (
-                <button
-                  key={d}
-                  type="button"
-                  onClick={() => setDifficulty(d)}
-                  className={`rounded-xl border px-3 py-2 text-sm font-medium capitalize transition ${
-                    difficulty === d
-                      ? "border-transparent bg-gradient-hero text-white shadow-glow"
-                      : "border-border bg-background hover:bg-accent"
-                  }`}
+      <div className="grid gap-6 lg:grid-cols-3">
+        {/* Continue learning + paths */}
+        <div className="space-y-6 lg:col-span-2">
+          {data.current && (
+            <SectionCard
+              title="Continue learning"
+              action={
+                <Link to="/courses" className="text-xs font-semibold text-primary hover:underline">
+                  All paths
+                </Link>
+              }
+            >
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
+                <ProgressRing value={data.current.pct} size={88} tone="primary" />
+                <div className="min-w-0 flex-1">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{data.current.category}</p>
+                  <h3 className="truncate text-lg font-bold">{data.current.title}</h3>
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    Next up: {data.current.nextModule?.title ?? "All units complete 🎉"}
+                  </p>
+                  <div className="mt-3">
+                    <Bar pct={data.current.pct} />
+                  </div>
+                </div>
+                <Link
+                  to="/courses/$courseId"
+                  params={{ courseId: data.current.id }}
+                  className="inline-flex shrink-0 items-center gap-2 rounded-xl bg-gradient-hero px-4 py-2.5 text-sm font-semibold text-white shadow-glow transition hover:opacity-90"
                 >
-                  {d}
-                </button>
+                  Resume <ArrowRight className="h-4 w-4" />
+                </Link>
+              </div>
+            </SectionCard>
+          )}
+
+          <SectionCard title="In progress">
+            <div className="grid gap-3 sm:grid-cols-2">
+              {data.courses.map((c) => (
+                <Link
+                  key={c.id}
+                  to="/courses/$courseId"
+                  params={{ courseId: c.id }}
+                  className="group rounded-2xl border border-border bg-background p-4 transition-all duration-300 hover:-translate-y-1 hover:shadow-glow"
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0">
+                      <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">{c.category}</p>
+                      <h4 className="truncate text-sm font-bold">{c.title}</h4>
+                    </div>
+                    <span className="shrink-0 rounded-lg bg-secondary px-2 py-1 text-[11px] font-bold">{c.pct}%</span>
+                  </div>
+                  <div className="mt-3">
+                    <Bar pct={c.pct} tone={c.color} />
+                  </div>
+                  <p className="mt-2 text-[11px] text-muted-foreground">
+                    {c.done}/{c.total} units · {c.estimated_hours}h · {c.difficulty}
+                  </p>
+                </Link>
               ))}
             </div>
-          </label>
+          </SectionCard>
+
+          <SectionCard title="Weekly study time">
+            <div className="h-52">
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={data.weekly}>
+                  <defs>
+                    <linearGradient id="g1" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="oklch(0.58 0.22 265)" stopOpacity={0.5} />
+                      <stop offset="100%" stopColor="oklch(0.58 0.22 265)" stopOpacity={0} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--color-border)" />
+                  <XAxis dataKey="label" tickLine={false} axisLine={false} fontSize={11} stroke="var(--color-muted-foreground)" />
+                  <Tooltip
+                    contentStyle={{
+                      borderRadius: 12,
+                      border: "1px solid var(--color-border)",
+                      background: "var(--color-card)",
+                      fontSize: 12,
+                    }}
+                    formatter={(v) => [`${v} min`, "Studied"]}
+                  />
+                  <Area type="monotone" dataKey="minutes" stroke="oklch(0.58 0.22 265)" strokeWidth={3} fill="url(#g1)" />
+                </AreaChart>
+              </ResponsiveContainer>
+            </div>
+          </SectionCard>
+
+          <SectionCard title="Study consistency">
+            <StudyHeatmap data={data.heatmap} />
+          </SectionCard>
         </div>
 
-        <button
-          onClick={() => create.mutate()}
-          disabled={!skill.trim() || create.isPending}
-          className="mt-6 flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-hero px-4 py-3 text-sm font-semibold text-white shadow-glow transition hover:scale-[1.01] disabled:opacity-60"
-        >
-          <Sparkles className="h-4 w-4" />
-          {create.isPending ? "Designing your path…" : "Generate path"}
-        </button>
+        {/* Right column */}
+        <div className="space-y-6">
+          <SectionCard
+            title="Upcoming deadlines"
+            action={<CalendarDays className="h-4 w-4 text-muted-foreground" />}
+          >
+            <div className="space-y-2">
+              {data.tasks.slice(0, 6).map((t) => (
+                <button
+                  key={t.id}
+                  onClick={() => flip.mutate({ id: t.id, done: !t.done })}
+                  className="flex w-full items-start gap-3 rounded-xl border border-border bg-background p-3 text-left transition hover:bg-accent"
+                >
+                  {t.done ? (
+                    <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+                  ) : (
+                    <Circle className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
+                  )}
+                  <span className="min-w-0">
+                    <span className={`block text-sm font-medium ${t.done ? "line-through opacity-60" : ""}`}>{t.title}</span>
+                    <span className="text-[11px] text-muted-foreground">
+                      {t.course_title ? `${t.course_title} · ` : ""}
+                      {t.due_at ? new Date(t.due_at).toLocaleDateString("en", { day: "numeric", month: "short" }) : "No date"}
+                    </span>
+                  </span>
+                </button>
+              ))}
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  if (newTask.trim().length > 1) create.mutate(newTask.trim());
+                }}
+                className="flex gap-2 pt-1"
+              >
+                <input
+                  value={newTask}
+                  onChange={(e) => setNewTask(e.target.value)}
+                  maxLength={140}
+                  placeholder="Add a task…"
+                  className="min-w-0 flex-1 rounded-xl border border-border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
+                />
+                <button className="rounded-xl bg-gradient-hero px-3 text-white shadow-glow" aria-label="Add task">
+                  <Plus className="h-4 w-4" />
+                </button>
+              </form>
+            </div>
+          </SectionCard>
+
+          <SectionCard title="Monthly hours">
+            <div className="h-40">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={data.monthly}>
+                  <XAxis dataKey="label" tickLine={false} axisLine={false} fontSize={11} stroke="var(--color-muted-foreground)" />
+                  <Tooltip
+                    contentStyle={{ borderRadius: 12, border: "1px solid var(--color-border)", background: "var(--color-card)", fontSize: 12 }}
+                    formatter={(v) => [`${v} h`, "Studied"]}
+                  />
+                  <RBar dataKey="hours" radius={[8, 8, 0, 0]} fill="oklch(0.72 0.18 25)" />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </SectionCard>
+
+          <SectionCard
+            title="Notifications"
+            action={
+              <Link to="/notifications" className="text-xs font-semibold text-primary hover:underline">
+                View all
+              </Link>
+            }
+          >
+            <div className="space-y-2">
+              {data.notifications.slice(0, 4).map((n) => (
+                <div key={n.id} className="flex items-start gap-3 rounded-xl border border-border bg-background p-3">
+                  <Bell className={`mt-0.5 h-4 w-4 shrink-0 ${n.read ? "text-muted-foreground" : "text-primary"}`} />
+                  <div className="min-w-0">
+                    <p className="text-sm font-semibold">{n.title}</p>
+                    <p className="line-clamp-2 text-[11px] text-muted-foreground">{n.body}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </SectionCard>
+
+          <SectionCard
+            title="Achievements"
+            action={
+              <Link to="/certificates" className="text-xs font-semibold text-primary hover:underline">
+                Certificates
+              </Link>
+            }
+          >
+            <div className="grid grid-cols-2 gap-3">
+              {[
+                { label: "First steps", unlocked: s.doneModules > 0, tone: "bg-gradient-blue" },
+                { label: "Week warrior", unlocked: s.streak >= 7, tone: "bg-gradient-coral" },
+                { label: "10 units", unlocked: s.doneModules >= 10, tone: "bg-gradient-lavender" },
+                { label: "Certified", unlocked: s.certificates > 0, tone: "bg-gradient-hero" },
+              ].map((b) => (
+                <div
+                  key={b.label}
+                  className={`rounded-2xl p-3 text-center text-white shadow-soft transition ${b.unlocked ? b.tone : "bg-muted text-muted-foreground"}`}
+                >
+                  <Award className="mx-auto h-5 w-5" />
+                  <p className="mt-1 text-[11px] font-bold">{b.label}</p>
+                </div>
+              ))}
+            </div>
+          </SectionCard>
+        </div>
       </div>
     </div>
   );

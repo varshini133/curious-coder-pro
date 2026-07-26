@@ -7,7 +7,7 @@ import { enroll, listCourses } from "@/lib/student.functions";
 import { Bar } from "@/components/app/stat-card";
 import { cn } from "@/lib/utils";
 
-export const Route = createFileRoute("/_authenticated/courses")({
+export const Route = createFileRoute("/_authenticated/courses/")({
   head: () => ({
     meta: [
       { title: "Learning Paths — Pathwise Smart Education" },

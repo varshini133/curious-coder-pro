@@ -4,6 +4,7 @@ import { toast } from "sonner";
 import ReactMarkdown from "react-markdown";
 import { Send, X, Trash2, GraduationCap, Loader2 } from "lucide-react";
 import { clearChat, listChat, sendChat } from "@/lib/chat.functions";
+import { useSignedIn } from "@/hooks/use-signed-in";
 import { cn } from "@/lib/utils";
 
 const SUGGESTIONS = [
@@ -15,10 +16,17 @@ const SUGGESTIONS = [
 
 export function AssistantPanel({ compact = false }: { compact?: boolean }) {
   const qc = useQueryClient();
+  const signedIn = useSignedIn();
   const [input, setInput] = useState("");
   const bottom = useRef<HTMLDivElement>(null);
 
-  const { data: messages, isLoading } = useQuery({ queryKey: ["chat"], queryFn: () => listChat() });
+  const { data: messages, isLoading } = useQuery({
+    queryKey: ["chat"],
+    queryFn: () => listChat(),
+    enabled: signedIn,
+    retry: false,
+  });
+
 
   const send = useMutation({
     mutationFn: (content: string) => sendChat({ data: { content } }),

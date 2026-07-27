@@ -4,6 +4,7 @@ import { Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable";
+import { claimRole, getAccount } from "@/lib/account.functions";
 import heroBooks from "@/assets/hero-books.png";
 
 export const Route = createFileRoute("/auth")({

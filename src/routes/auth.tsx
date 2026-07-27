@@ -14,6 +14,8 @@ export const Route = createFileRoute("/auth")({
   component: AuthPage,
 });
 
+const PENDING_ROLE_KEY = "pathwise:pending-role";
+
 function AuthPage() {
   const { mode: initialMode } = Route.useSearch();
   const navigate = useNavigate();
@@ -21,13 +23,35 @@ function AuthPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
+  const [role, setRole] = useState<"student" | "instructor">("student");
   const [loading, setLoading] = useState(false);
+
+  async function finishSignIn(chosen?: "student" | "instructor") {
+    const pending =
+      chosen ??
+      ((localStorage.getItem(PENDING_ROLE_KEY) as "student" | "instructor" | null) ?? undefined);
+    let resolved: "student" | "instructor" = "student";
+    try {
+      if (pending) {
+        const res = await claimRole({ data: { role: pending } });
+        resolved = res.role as "student" | "instructor";
+      } else {
+        const account = await getAccount();
+        resolved = account.role;
+      }
+    } catch {
+      resolved = pending ?? "student";
+    }
+    localStorage.removeItem(PENDING_ROLE_KEY);
+    navigate({ to: resolved === "instructor" ? "/instructor" : "/dashboard" });
+  }
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
-      if (data.session) navigate({ to: "/dashboard" });
+      if (data.session) void finishSignIn();
     });
-  }, [navigate]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -37,17 +61,17 @@ function AuthPage() {
         const { error } = await supabase.auth.signUp({
           email, password,
           options: {
-            emailRedirectTo: `${window.location.origin}/dashboard`,
+            emailRedirectTo: `${window.location.origin}/auth`,
             data: { full_name: name || email.split("@")[0] },
           },
         });
         if (error) throw error;
         toast.success("Account created! Signing you in…");
-        navigate({ to: "/dashboard" });
+        await finishSignIn(role);
       } else {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
-        navigate({ to: "/dashboard" });
+        await finishSignIn();
       }
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Something went wrong");
@@ -58,6 +82,7 @@ function AuthPage() {
 
   async function onGoogle() {
     setLoading(true);
+    if (mode === "signup") localStorage.setItem(PENDING_ROLE_KEY, role);
     const result = await lovable.auth.signInWithOAuth("google", {
       redirect_uri: window.location.origin,
     });
@@ -67,8 +92,9 @@ function AuthPage() {
       return;
     }
     if (result.redirected) return;
-    navigate({ to: "/dashboard" });
+    await finishSignIn();
   }
+
 
   return (
     <div className="min-h-screen">

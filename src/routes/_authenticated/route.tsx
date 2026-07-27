@@ -52,8 +52,14 @@ function AuthedLayout() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const signedIn = useSignedIn();
 
-  const { data: account } = useQuery({ queryKey: ["account"], queryFn: () => getAccount() });
+  const { data: account } = useQuery({
+    queryKey: ["account"],
+    queryFn: () => getAccount(),
+    enabled: signedIn,
+    retry: false,
+  });
   const role = account?.role ?? "student";
   const nav = role === "instructor" ? INSTRUCTOR_NAV : STUDENT_NAV;
   const name = account?.profile?.display_name ?? user.email ?? "You";
@@ -69,14 +75,17 @@ function AuthedLayout() {
       return count ?? 0;
     },
     refetchInterval: 60000,
+    enabled: signedIn,
+    retry: false,
   });
 
   async function signOut() {
     await queryClient.cancelQueries();
-    queryClient.clear();
     await supabase.auth.signOut();
     navigate({ to: "/auth", replace: true });
+    queryClient.clear();
   }
+
 
   const isActive = (to: string) => pathname === to || pathname.startsWith(`${to}/`);
 

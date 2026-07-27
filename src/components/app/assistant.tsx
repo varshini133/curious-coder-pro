@@ -4,6 +4,7 @@ import { toast } from "sonner";
 import ReactMarkdown from "react-markdown";
 import { Send, X, Trash2, GraduationCap, Loader2 } from "lucide-react";
 import { clearChat, listChat, sendChat } from "@/lib/chat.functions";
+import { useSignedIn } from "@/hooks/use-signed-in";
 import { cn } from "@/lib/utils";
 
 const SUGGESTIONS = [

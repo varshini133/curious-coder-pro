@@ -243,7 +243,7 @@ function AuthPage() {
               {mode === "signup" ? "Already have an account?" : "New to Pathwise?"}{" "}
               <button
                 type="button"
-                onClick={() => setMode(mode === "signup" ? "signin" : "signup")}
+                onClick={() => { setFormError(null); setMode(mode === "signup" ? "signin" : "signup"); }}
                 className="font-semibold text-primary hover:underline"
               >
                 {mode === "signup" ? "Sign in" : "Create an account"}

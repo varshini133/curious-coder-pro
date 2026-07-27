@@ -2,7 +2,8 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { getAccount, updateProfile } from "@/lib/account.functions";
+import { getAccount, updateProfile, setRole } from "@/lib/account.functions";
+import { useNavigate } from "@tanstack/react-router";
 import { SectionCard } from "@/components/app/stat-card";
 
 export const Route = createFileRoute("/_authenticated/profile")({
@@ -17,7 +18,17 @@ export const Route = createFileRoute("/_authenticated/profile")({
 
 function ProfilePage() {
   const qc = useQueryClient();
+  const navigate = useNavigate();
   const { data: account } = useQuery({ queryKey: ["account"], queryFn: () => getAccount() });
+  const switchRole = useMutation({
+    mutationFn: (role: "student" | "instructor") => setRole({ data: { role } }),
+    onSuccess: async (res) => {
+      await qc.invalidateQueries();
+      toast.success(`Switched to ${res.role} view`);
+      navigate({ to: res.role === "instructor" ? "/instructor" : "/dashboard" });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
   const [form, setForm] = useState({ display_name: "", department: "", bio: "", skills: "" });
 
   useEffect(() => {
@@ -53,6 +64,31 @@ function ProfilePage() {
         <h1 className="text-2xl font-extrabold sm:text-3xl">{form.display_name || "Your profile"}</h1>
         <p className="mt-2 text-sm opacity-90">{account?.email} · {account?.role === "instructor" ? "Instructor" : "Student"}</p>
       </header>
+
+      <SectionCard title="Account role">
+        <p className="text-sm text-muted-foreground">
+          Switch between the student experience and the instructor dashboard.
+        </p>
+        <div className="mt-4 grid grid-cols-2 gap-2 sm:max-w-sm">
+          {(["student", "instructor"] as const).map((r) => (
+            <button
+              key={r}
+              type="button"
+              disabled={switchRole.isPending}
+              onClick={() => { if (account?.role !== r) switchRole.mutate(r); }}
+              aria-pressed={account?.role === r}
+              className={
+                "rounded-xl border px-3 py-3 text-sm font-semibold capitalize transition disabled:opacity-60 " +
+                (account?.role === r
+                  ? "border-transparent bg-gradient-hero text-white shadow-glow"
+                  : "border-border bg-background text-foreground/70 shadow-soft hover:bg-accent")
+              }
+            >
+              {r === "student" ? "🎓 Student" : "🧑‍🏫 Instructor"}
+            </button>
+          ))}
+        </div>
+      </SectionCard>
 
       <SectionCard title="Personal details">
         <form onSubmit={(e) => { e.preventDefault(); if (form.display_name.trim().length > 0) save.mutate(); }} className="grid gap-4 sm:grid-cols-2">

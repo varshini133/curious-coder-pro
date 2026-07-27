@@ -62,6 +62,19 @@ export const claimRole = createServerFn({ method: "POST" })
     return { role: data.role };
   });
 
+/** Switches the caller's own role between student and instructor. */
+export const setRole = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((v: unknown) => z.object({ role: RoleSchema }).parse(v))
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+    const { error: delErr } = await supabase.from("user_roles").delete().eq("user_id", userId);
+    if (delErr) throw new Error(delErr.message);
+    const { error } = await supabase.from("user_roles").insert({ user_id: userId, role: data.role });
+    if (error) throw new Error(error.message);
+    return { role: data.role };
+  });
+
 export const updateProfile = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((v: unknown) =>

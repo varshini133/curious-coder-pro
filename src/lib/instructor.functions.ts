@@ -4,15 +4,7 @@ import { z } from "zod";
 
 const uuid = z.string().uuid();
 
-type Sb = {
-  from: (table: "user_roles") => {
-    select: (cols: string) => {
-      eq: (col: string, val: string) => {
-        eq: (col: string, val: string) => PromiseLike<{ data: unknown[] | null }>;
-      };
-    };
-  };
-};
+type Sb = { from: (table: string) => any };
 
 async function assertInstructor(supabase: Sb, userId: string) {
   const { data } = await supabase

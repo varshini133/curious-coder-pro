@@ -4,11 +4,15 @@ import { z } from "zod";
 
 const uuid = z.string().uuid();
 
-type Sb = { rpc: (fn: "has_role", args: { _user_id: string; _role: "instructor" }) => PromiseLike<{ data: unknown }> };
+type Sb = { from: (table: string) => any };
 
 async function assertInstructor(supabase: Sb, userId: string) {
-  const { data } = await supabase.rpc("has_role", { _user_id: userId, _role: "instructor" });
-  if (data !== true) throw new Error("Instructor access required");
+  const { data } = await supabase
+    .from("user_roles")
+    .select("role")
+    .eq("user_id", userId)
+    .eq("role", "instructor");
+  if (!data || data.length === 0) throw new Error("Instructor access required");
 }
 
 export const getInstructorOverview = createServerFn({ method: "GET" })

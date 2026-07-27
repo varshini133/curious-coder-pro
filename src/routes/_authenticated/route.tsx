@@ -18,6 +18,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { getAccount } from "@/lib/account.functions";
 import { AssistantFab } from "@/components/app/assistant";
 import { ThemeToggle } from "@/components/app/theme-toggle";
+import { useSignedIn } from "@/hooks/use-signed-in";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_authenticated")({

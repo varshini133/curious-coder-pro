@@ -128,6 +128,30 @@ function AuthPage() {
               {mode === "signup" ? "Start building your learning paths." : "Sign in to continue your journey."}
             </p>
 
+            {mode === "signup" && (
+              <div className="mt-6">
+                <span className="mb-2 block text-xs font-semibold text-muted-foreground">I am a…</span>
+                <div className="grid grid-cols-2 gap-2">
+                  {(["student", "instructor"] as const).map((r) => (
+                    <button
+                      key={r}
+                      type="button"
+                      onClick={() => setRole(r)}
+                      aria-pressed={role === r}
+                      className={
+                        "rounded-xl border px-3 py-3 text-sm font-semibold capitalize transition " +
+                        (role === r
+                          ? "border-transparent bg-gradient-hero text-white shadow-glow"
+                          : "border-border bg-background text-foreground/70 shadow-soft hover:bg-accent")
+                      }
+                    >
+                      {r === "student" ? "🎓 Student" : "🧑‍🏫 Instructor"}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
             <button
               type="button"
               onClick={onGoogle}

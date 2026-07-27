@@ -16,10 +16,17 @@ const SUGGESTIONS = [
 
 export function AssistantPanel({ compact = false }: { compact?: boolean }) {
   const qc = useQueryClient();
+  const signedIn = useSignedIn();
   const [input, setInput] = useState("");
   const bottom = useRef<HTMLDivElement>(null);
 
-  const { data: messages, isLoading } = useQuery({ queryKey: ["chat"], queryFn: () => listChat() });
+  const { data: messages, isLoading } = useQuery({
+    queryKey: ["chat"],
+    queryFn: () => listChat(),
+    enabled: signedIn,
+    retry: false,
+  });
+
 
   const send = useMutation({
     mutationFn: (content: string) => sendChat({ data: { content } }),

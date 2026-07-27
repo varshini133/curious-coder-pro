@@ -18,7 +18,17 @@ export const Route = createFileRoute("/_authenticated/profile")({
 
 function ProfilePage() {
   const qc = useQueryClient();
+  const navigate = useNavigate();
   const { data: account } = useQuery({ queryKey: ["account"], queryFn: () => getAccount() });
+  const switchRole = useMutation({
+    mutationFn: (role: "student" | "instructor") => setRole({ data: { role } }),
+    onSuccess: async (res) => {
+      await qc.invalidateQueries();
+      toast.success(`Switched to ${res.role} view`);
+      navigate({ to: res.role === "instructor" ? "/instructor" : "/dashboard" });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
   const [form, setForm] = useState({ display_name: "", department: "", bio: "", skills: "" });
 
   useEffect(() => {

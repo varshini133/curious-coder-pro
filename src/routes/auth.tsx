@@ -26,6 +26,8 @@ function AuthPage() {
   const [name, setName] = useState("");
   const [role, setRole] = useState<"student" | "instructor">("student");
   const [loading, setLoading] = useState(false);
+  const [formError, setFormError] = useState<string | null>(null);
+
 
   async function finishSignIn(chosen?: "student" | "instructor") {
     const pending =
@@ -54,32 +56,80 @@ function AuthPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  function friendlyError(message: string) {
+    const m = message.toLowerCase();
+    if (m.includes("invalid login credentials"))
+      return "Incorrect email or password. Please try again.";
+    if (m.includes("email not confirmed"))
+      return "This account isn't confirmed yet. Try signing up again or contact support.";
+    if (m.includes("user already registered") || m.includes("already been registered"))
+      return "An account with this email already exists — try signing in instead.";
+    if (m.includes("password should be at least"))
+      return "Password must be at least 6 characters.";
+    if (m.includes("pwned") || m.includes("compromised") || m.includes("weak"))
+      return "That password has appeared in a data breach. Please choose a stronger one.";
+    if (m.includes("rate limit")) return "Too many attempts. Please wait a moment and try again.";
+    return message;
+  }
+
+  function validate() {
+    const trimmed = email.trim();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(trimmed)) {
+      setFormError("Please enter a valid email address.");
+      return null;
+    }
+    if (password.length < 6) {
+      setFormError("Password must be at least 6 characters.");
+      return null;
+    }
+    setFormError(null);
+    return trimmed;
+  }
+
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
+    const validEmail = validate();
+    if (!validEmail) return;
     setLoading(true);
     try {
       if (mode === "signup") {
-        const { error } = await supabase.auth.signUp({
-          email, password,
+        const { data, error } = await supabase.auth.signUp({
+          email: validEmail, password,
           options: {
             emailRedirectTo: `${window.location.origin}/auth`,
-            data: { full_name: name || email.split("@")[0] },
+            data: { full_name: name || validEmail.split("@")[0] },
           },
         });
         if (error) throw error;
+        // Auto-confirm is on, but fall back to an explicit sign-in if no session came back.
+        if (!data.session) {
+          const { error: signInError } = await supabase.auth.signInWithPassword({
+            email: validEmail,
+            password,
+          });
+          if (signInError) throw signInError;
+        }
         toast.success("Account created! Signing you in…");
         await finishSignIn(role);
       } else {
-        const { error } = await supabase.auth.signInWithPassword({ email, password });
+        const { data, error } = await supabase.auth.signInWithPassword({
+          email: validEmail,
+          password,
+        });
         if (error) throw error;
+        if (!data.session) throw new Error("Invalid login credentials");
+        toast.success("Signed in successfully");
         await finishSignIn();
       }
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Something went wrong");
+      const message = friendlyError(err instanceof Error ? err.message : "Something went wrong");
+      setFormError(message);
+      toast.error(message);
     } finally {
       setLoading(false);
     }
   }
+
 
   async function onGoogle() {
     setLoading(true);
@@ -174,6 +224,12 @@ function AuthPage() {
               )}
               <Field label="Email" type="email" value={email} onChange={setEmail} placeholder="you@example.com" required />
               <Field label="Password" type="password" value={password} onChange={setPassword} placeholder="••••••••" required />
+              {formError && (
+                <p role="alert" className="rounded-xl bg-destructive/10 px-3 py-2 text-xs font-medium text-destructive">
+                  {formError}
+                </p>
+              )}
+
               <button
                 type="submit"
                 disabled={loading}
@@ -187,7 +243,7 @@ function AuthPage() {
               {mode === "signup" ? "Already have an account?" : "New to Pathwise?"}{" "}
               <button
                 type="button"
-                onClick={() => setMode(mode === "signup" ? "signin" : "signup")}
+                onClick={() => { setFormError(null); setMode(mode === "signup" ? "signin" : "signup"); }}
                 className="font-semibold text-primary hover:underline"
               >
                 {mode === "signup" ? "Sign in" : "Create an account"}

@@ -1,22 +1,21 @@
-## Why there's no instructor login
+## Diagnosis (verified)
 
-There is only one login. The sign-up form (`src/routes/auth.tsx`) never asks for a role and never calls the existing `claimRole` server function, so every new account falls through to the default in `getAccount` and becomes a **student**. The instructor dashboard, sidebar and pages already exist — nothing can reach them because no account is ever marked as an instructor.
+I checked the accounts in your auth system. Every email/password account created so far has **no confirmed email** (`email_confirmed_at` is empty), while the Google account is confirmed automatically. The auth logs show sign-in attempts returning `400: Invalid login credentials` — that is exactly what the auth provider returns when the account exists but its email was never confirmed.
 
-## Plan
+So: sign-up *is* working (accounts are created, passwords are stored as bcrypt hashes — never plain text, and the app never touches them). Login fails because confirmation emails are required and your project has no email sending configured, so nobody can ever confirm.
 
-1. **Role picker on sign-up**
-   Add a two-option toggle ("I'm a Student" / "I'm an Instructor") to the sign-up view of the auth page, styled with the existing gradient/soft-shadow cards. Hidden in sign-in mode (role comes from the database there).
+## Fix
 
-2. **Persist the choice**
-   After a successful email sign-up — and after Google sign-in when it's a first-time account — call the existing `claimRole` function with the selected role before navigating. Store the pending choice so the Google redirect round-trip doesn't lose it.
+1. **Turn on auto-confirm for email sign-ups** in the auth settings, so a new account is usable immediately after sign-up (standard for a demo/college-project build; can be switched back once an email domain is set up).
+2. **Confirm the existing unconfirmed accounts** so the users already registered can sign in instead of being permanently locked out.
+3. **Better error messages in `src/routes/auth.tsx`** (no UI/layout change, same components):
+   - Map "Invalid login credentials" to "Incorrect email or password."
+   - Map "User already registered" to a message suggesting sign-in.
+   - Map "Email not confirmed" to a clear explanation.
+   - Show a success toast on sign-in.
+4. **Client-side validation** on the existing form fields: valid email format and minimum password length (6), with inline messaging before the request is sent.
+5. **Sign-up session handling**: after `signUp`, verify a session actually exists before routing; if not, fall back to `signInWithPassword` so the user lands on their dashboard reliably.
 
-3. **Route to the right home**
-   Send instructors to `/instructor` and students to `/dashboard` after sign-in/sign-up, instead of always `/dashboard`.
+## Not changing
 
-4. **Role switch for demos**
-   Add a "Switch to instructor / student view" control on the Profile page so an existing account (including yours) can flip roles without creating a new one — useful for the project demo. Backed by a small server function that updates `user_roles` for the caller only.
-
-### Technical notes
-- `claimRole` currently no-ops if a role row already exists; the new switch function will update the existing row instead.
-- Role is read via the `account` query, so switching invalidates that query to re-render the sidebar navigation.
-- No schema changes needed — `user_roles` and `has_role()` already exist.
+Routing, layout, styling, Google sign-in flow, database schema, and the role-selection logic all stay exactly as they are. Only `src/routes/auth.tsx` is edited, plus the auth provider setting and a one-time confirmation of existing accounts.

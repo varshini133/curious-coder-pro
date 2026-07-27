@@ -2,7 +2,8 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { getAccount, updateProfile } from "@/lib/account.functions";
+import { getAccount, updateProfile, setRole } from "@/lib/account.functions";
+import { useNavigate } from "@tanstack/react-router";
 import { SectionCard } from "@/components/app/stat-card";
 
 export const Route = createFileRoute("/_authenticated/profile")({

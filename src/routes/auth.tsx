@@ -26,6 +26,8 @@ function AuthPage() {
   const [name, setName] = useState("");
   const [role, setRole] = useState<"student" | "instructor">("student");
   const [loading, setLoading] = useState(false);
+  const [formError, setFormError] = useState<string | null>(null);
+
 
   async function finishSignIn(chosen?: "student" | "instructor") {
     const pending =

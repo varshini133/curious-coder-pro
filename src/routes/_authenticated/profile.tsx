@@ -54,6 +54,31 @@ function ProfilePage() {
         <p className="mt-2 text-sm opacity-90">{account?.email} · {account?.role === "instructor" ? "Instructor" : "Student"}</p>
       </header>
 
+      <SectionCard title="Account role">
+        <p className="text-sm text-muted-foreground">
+          Switch between the student experience and the instructor dashboard.
+        </p>
+        <div className="mt-4 grid grid-cols-2 gap-2 sm:max-w-sm">
+          {(["student", "instructor"] as const).map((r) => (
+            <button
+              key={r}
+              type="button"
+              disabled={switchRole.isPending}
+              onClick={() => { if (account?.role !== r) switchRole.mutate(r); }}
+              aria-pressed={account?.role === r}
+              className={
+                "rounded-xl border px-3 py-3 text-sm font-semibold capitalize transition disabled:opacity-60 " +
+                (account?.role === r
+                  ? "border-transparent bg-gradient-hero text-white shadow-glow"
+                  : "border-border bg-background text-foreground/70 shadow-soft hover:bg-accent")
+              }
+            >
+              {r === "student" ? "🎓 Student" : "🧑‍🏫 Instructor"}
+            </button>
+          ))}
+        </div>
+      </SectionCard>
+
       <SectionCard title="Personal details">
         <form onSubmit={(e) => { e.preventDefault(); if (form.display_name.trim().length > 0) save.mutate(); }} className="grid gap-4 sm:grid-cols-2">
           <label className="text-sm font-medium">Display name

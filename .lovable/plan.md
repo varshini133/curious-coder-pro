@@ -1,21 +1,27 @@
-## Diagnosis (verified)
+## Goal
 
-I checked the accounts in your auth system. Every email/password account created so far has **no confirmed email** (`email_confirmed_at` is empty), while the Google account is confirmed automatically. The auth logs show sign-in attempts returning `400: Invalid login credentials` — that is exactly what the auth provider returns when the account exists but its email was never confirmed.
+Let email/password users request a reset link by email and set a new password, without changing the existing UI style or project structure.
 
-So: sign-up *is* working (accounts are created, passwords are stored as bcrypt hashes — never plain text, and the app never touches them). Login fails because confirmation emails are required and your project has no email sending configured, so nobody can ever confirm.
+## What gets built
 
-## Fix
+**1. "Forgot password?" on the sign-in form (`src/routes/auth.tsx`)**
+- Small link under the password field, visible only in sign-in mode.
+- Clicking switches the card into a lightweight "reset" state: email field + "Send reset link" button + "Back to sign in".
+- Sends the reset email with a redirect back to `/reset-password`.
+- Reuses the existing `Field` component, inline error box, and toast patterns — same look, no new design elements.
 
-1. **Turn on auto-confirm for email sign-ups** in the auth settings, so a new account is usable immediately after sign-up (standard for a demo/college-project build; can be switched back once an email domain is set up).
-2. **Confirm the existing unconfirmed accounts** so the users already registered can sign in instead of being permanently locked out.
-3. **Better error messages in `src/routes/auth.tsx`** (no UI/layout change, same components):
-   - Map "Invalid login credentials" to "Incorrect email or password."
-   - Map "User already registered" to a message suggesting sign-in.
-   - Map "Email not confirmed" to a clear explanation.
-   - Show a success toast on sign-in.
-4. **Client-side validation** on the existing form fields: valid email format and minimum password length (6), with inline messaging before the request is sent.
-5. **Sign-up session handling**: after `signUp`, verify a session actually exists before routing; if not, fall back to `signInWithPassword` so the user lands on their dashboard reliably.
+**2. New public page `src/routes/reset-password.tsx`**
+- Detects the recovery session arriving from the email link (Supabase sets it from the URL hash) and waits for it before showing the form.
+- Form: new password + confirm password, same styling as the auth card.
+- Validates minimum 6 characters and that both fields match; maps provider errors to friendly messages via the same helper style already in `auth.tsx`.
+- On success: toast, then route the user onward to their dashboard.
+- If the link is expired/invalid: clear message plus a link back to `/auth` to request a new one.
+- Public route (not under `_authenticated`), with its own page title/description metadata.
+
+## Email delivery
+
+Reset emails will send using Lovable's default sender template — no setup needed for this to work. If you later want the email branded with your own domain and wording, that requires setting up a sender domain you own; happy to do that as a follow-up.
 
 ## Not changing
 
-Routing, layout, styling, Google sign-in flow, database schema, and the role-selection logic all stay exactly as they are. Only `src/routes/auth.tsx` is edited, plus the auth provider setting and a one-time confirmation of existing accounts.
+Google sign-in, role selection, routing for existing pages, database schema, styling tokens, and layout all stay as they are.

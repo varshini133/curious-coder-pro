@@ -133,6 +133,33 @@ function AuthPage() {
     }
   }
 
+  async function onForgot(e: React.FormEvent) {
+    e.preventDefault();
+    const trimmed = email.trim();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(trimmed)) {
+      setFormError("Please enter a valid email address.");
+      return;
+    }
+    setFormError(null);
+    setLoading(true);
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(trimmed, {
+        redirectTo: `${window.location.origin}/reset-password`,
+      });
+      if (error) throw error;
+      setResetSent(true);
+      toast.success("Reset link sent — check your inbox.");
+    } catch (err) {
+      const message = friendlyError(err instanceof Error ? err.message : "Something went wrong");
+      setFormError(message);
+      toast.error(message);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+
+
 
   async function onGoogle() {
     setLoading(true);
@@ -176,6 +203,45 @@ function AuthPage() {
               <div className="grid h-8 w-8 place-items-center rounded-xl bg-gradient-hero"><Sparkles className="h-4 w-4 text-white" /></div>
               <span className="font-bold">Pathwise</span>
             </Link>
+            {forgot ? (
+              <>
+                <h1 className="text-2xl font-bold">Reset your password</h1>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  {resetSent
+                    ? "If an account exists for that email, a reset link is on its way."
+                    : "We'll email you a link to set a new password."}
+                </p>
+
+                {!resetSent && (
+                  <form onSubmit={onForgot} className="mt-6 space-y-3">
+                    <Field label="Email" type="email" value={email} onChange={setEmail} placeholder="you@example.com" required />
+                    {formError && (
+                      <p role="alert" className="rounded-xl bg-destructive/10 px-3 py-2 text-xs font-medium text-destructive">
+                        {formError}
+                      </p>
+                    )}
+                    <button
+                      type="submit"
+                      disabled={loading}
+                      className="mt-2 w-full rounded-xl bg-gradient-hero px-4 py-2.5 text-sm font-semibold text-white shadow-glow transition hover:scale-[1.01] disabled:opacity-60"
+                    >
+                      {loading ? "Please wait…" : "Send reset link"}
+                    </button>
+                  </form>
+                )}
+
+                <p className="mt-6 text-center text-sm text-muted-foreground">
+                  <button
+                    type="button"
+                    onClick={() => { setForgot(false); setResetSent(false); setFormError(null); }}
+                    className="font-semibold text-primary hover:underline"
+                  >
+                    Back to sign in
+                  </button>
+                </p>
+              </>
+            ) : (
+              <>
             <h1 className="text-2xl font-bold">{mode === "signup" ? "Create your account" : "Welcome back"}</h1>
             <p className="mt-1 text-sm text-muted-foreground">
               {mode === "signup" ? "Start building your learning paths." : "Sign in to continue your journey."}
@@ -227,6 +293,17 @@ function AuthPage() {
               )}
               <Field label="Email" type="email" value={email} onChange={setEmail} placeholder="you@example.com" required />
               <Field label="Password" type="password" value={password} onChange={setPassword} placeholder="••••••••" required />
+              {mode === "signin" && (
+                <div className="flex justify-end">
+                  <button
+                    type="button"
+                    onClick={() => { setForgot(true); setResetSent(false); setFormError(null); }}
+                    className="text-xs font-semibold text-primary hover:underline"
+                  >
+                    Forgot password?
+                  </button>
+                </div>
+              )}
               {formError && (
                 <p role="alert" className="rounded-xl bg-destructive/10 px-3 py-2 text-xs font-medium text-destructive">
                   {formError}
@@ -252,6 +329,9 @@ function AuthPage() {
                 {mode === "signup" ? "Sign in" : "Create an account"}
               </button>
             </p>
+              </>
+            )}
+
           </div>
         </div>
       </div>

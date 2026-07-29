@@ -27,6 +27,9 @@ function AuthPage() {
   const [role, setRole] = useState<"student" | "instructor">("student");
   const [loading, setLoading] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
+  const [forgot, setForgot] = useState(false);
+  const [resetSent, setResetSent] = useState(false);
+
 
 
   async function finishSignIn(chosen?: "student" | "instructor") {
